@@ -1,4 +1,4 @@
-// Prisma + SQLite — 재고 회전율 및 발주 관리 (SCM)
+// schema.prisma 파일 수정
 
 generator client {
   provider = "prisma-client-js"
@@ -6,7 +6,8 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  // 기존 env("DATABASE_URL")을 지우고 아래처럼 파일 경로를 직접 적어줍니다.
+  url      = "file:./dev.db" 
 }
 
 model User {
@@ -17,18 +18,17 @@ model User {
   updatedAt    DateTime @updatedAt
 }
 
-/// 상품 — M1=직전 1개월, M2=2개월 전, M3=3개월 전 출하량
 model Product {
-  id                String   @id @default(cuid())
-  barcode           String   @unique
-  name              String
-  currentStock      Int
-  shipmentM1        Int
-  shipmentM2        Int
-  shipmentM3        Int
-  seasonalityIndex  Float    @default(1.0)
-  leadTime          Int      @default(14)
-  unitPrice         Int      @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               String   @id @default(cuid())
+  barcode          String   @unique
+  name             String
+  currentStock     Int
+  shipmentM1       Int
+  shipmentM2       Int
+  shipmentM3       Int
+  seasonalityIndex Float    @default(1.0)
+  leadTime         Int      @default(14)
+  unitPrice        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
