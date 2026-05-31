@@ -1,6 +1,9 @@
-import type { MonthlyShipment } from "@/domain/entities/Product";
-
 export type MonthLocale = "ko" | "ja";
+
+export interface MonthlyShipment {
+  monthKey: string;
+  quantity: number;
+}
 
 const MONTH_LABELS: Record<MonthLocale, readonly string[]> = {
   ko: [
