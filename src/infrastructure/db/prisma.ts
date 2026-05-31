@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { syncDatabaseUrlEnv } from "@/lib/databaseConfig";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -13,6 +14,8 @@ function isClientReady(client: PrismaClient): boolean {
  * 유효하지 않으면 싱글톤을 버리고 새 클라이언트를 생성한다.
  */
 export function getPrismaClient(): PrismaClient {
+  syncDatabaseUrlEnv();
+
   const cached = globalForPrisma.prisma;
   if (cached && !isClientReady(cached)) {
     void cached.$disconnect();

@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { resolveDatabaseUrl, syncDatabaseUrlEnv } from "../src/lib/databaseConfig";
 
 function run(command: string) {
   console.log(`\n> ${command}`);
@@ -27,7 +28,8 @@ Neon: https://neon.tech → New Project → Connect → Connection string 복사
 `);
 }
 
-const dbUrl = process.env.DATABASE_URL?.trim();
+syncDatabaseUrlEnv();
+const dbUrl = resolveDatabaseUrl();
 const hasDatabase = isValidPostgresUrl(dbUrl);
 
 if (dbUrl?.startsWith("file:")) {
