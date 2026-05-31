@@ -1,0 +1,34 @@
+// Prisma + SQLite — 재고 회전율 및 발주 관리 (SCM)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+/// 상품 — M1=직전 1개월, M2=2개월 전, M3=3개월 전 출하량
+model Product {
+  id                String   @id @default(cuid())
+  barcode           String   @unique
+  name              String
+  currentStock      Int
+  shipmentM1        Int
+  shipmentM2        Int
+  shipmentM3        Int
+  seasonalityIndex  Float    @default(1.0)
+  leadTime          Int      @default(14)
+  unitPrice         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
