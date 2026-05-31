@@ -1,13 +1,13 @@
-// schema.prisma 파일 수정
+// Prisma schema — production uses PostgreSQL (Neon / Vercel Postgres).
+// Local dev: set DATABASE_URL in .env (see .env.example).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  // 기존 env("DATABASE_URL")을 지우고 아래처럼 파일 경로를 직접 적어줍니다.
-  url      = "file:./dev.db" 
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
