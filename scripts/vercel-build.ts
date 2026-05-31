@@ -5,62 +5,66 @@ function run(command: string) {
   execSync(command, { stdio: "inherit", env: process.env });
 }
 
-function fail(message: string, detail?: string) {
-  console.error(`\n❌ [Vercel Build] ${message}`);
-  if (detail) console.error(detail);
-  console.error(`
-📋 Vercel 환경 변수 설정 (Settings → Environment Variables):
+function isValidPostgresUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  const trimmed = url.trim();
+  if (trimmed.startsWith("file:")) return false;
+  return trimmed.startsWith("postgresql://") || trimmed.startsWith("postgres://");
+}
 
-  DATABASE_URL = Neon PostgreSQL 연결 문자열
-    ✅ postgresql:// 로 시작해야 합니다
-    ❌ file:./dev.db (SQLite) 는 사용 불가
+function warnMissingDatabase() {
+  console.warn(`
+⚠️  [Vercel Build] DATABASE_URL이 없거나 올바르지 않습니다.
+    → 이번 배포는 Next.js 빌드만 진행합니다 (배포는 성공).
+    → 로그인/DB 기능을 쓰려면 Vercel 환경 변수를 설정한 뒤 Redeploy 하세요.
 
-  SESSION_SECRET = 32자 이상 랜덤 문자열
+📋 Settings → Environment Variables:
 
-Neon (https://neon.tech) → 프로젝트 → Connect →
-  "Direct connection" 또는 "Pooled connection" URL 복사
+  DATABASE_URL  = Neon postgresql://... URL
+  SESSION_SECRET  = 32자 이상 랜덤 문자열
 
-환경 변수 저장 후 Redeploy 하세요.
+Neon: https://neon.tech → New Project → Connect → Connection string 복사
 `);
-  process.exit(1);
 }
 
 const dbUrl = process.env.DATABASE_URL?.trim();
+const hasDatabase = isValidPostgresUrl(dbUrl);
 
-if (!dbUrl) {
-  fail("DATABASE_URL이 설정되지 않았습니다.");
-}
-
-if (dbUrl.startsWith("file:")) {
-  fail(
-    "DATABASE_URL이 SQLite(file:...)로 설정되어 있습니다.",
-    "Vercel에서는 PostgreSQL(Neon) URL이 필요합니다. 기존 file:./dev.db 값을 삭제하고 Neon URL로 교체하세요.",
-  );
-}
-
-if (!dbUrl.startsWith("postgresql://") && !dbUrl.startsWith("postgres://")) {
-  fail(
-    "DATABASE_URL 형식이 올바르지 않습니다.",
-    `현재 값은 postgresql:// 로 시작해야 합니다.`,
+if (dbUrl?.startsWith("file:")) {
+  console.warn(
+    "\n⚠️  [Vercel Build] DATABASE_URL이 SQLite(file:...)입니다. PostgreSQL URL로 교체하세요.",
   );
 }
 
 try {
   run("npx prisma generate");
-  run("npx prisma db push --skip-generate --accept-data-loss");
-  run("npx prisma db seed");
+
+  if (hasDatabase) {
+    console.log("\n✅ [Vercel Build] DATABASE_URL 확인됨 — DB 동기화 및 seed 진행");
+    run("npx prisma db push --skip-generate --accept-data-loss");
+    run("npx prisma db seed");
+  } else {
+    warnMissingDatabase();
+  }
+
   run("npx next build");
-  console.log("\n✅ Build completed successfully.");
+  console.log(
+    hasDatabase
+      ? "\n✅ Build completed successfully (with database setup)."
+      : "\n✅ Build completed (without database — set DATABASE_URL and redeploy for login).",
+  );
 } catch (error) {
   console.error("\n❌ [Vercel Build] 명령 실행 중 오류가 발생했습니다.");
   if (error instanceof Error && "stderr" in error) {
     console.error(String((error as { stderr?: Buffer }).stderr ?? ""));
   }
-  console.error(`
+  if (hasDatabase) {
+    console.error(`
 💡 db push 실패 시 확인:
   - Neon DB가 생성되어 있는지
   - DATABASE_URL의 비밀번호/호스트가 맞는지
-  - Neon 대시보드에서 DB가 일시 중지(suspend)되지 않았는지
+  - Neon 대시보드에서 DB가 suspend 상태가 아닌지
 `);
+  }
   process.exit(1);
 }
