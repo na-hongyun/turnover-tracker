@@ -4,8 +4,14 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_MAX_AGE,
 } from "@/infrastructure/repositories/getAuthServices";
+import { getDatabaseConfigError } from "@/lib/databaseConfig";
 
 export async function POST(request: NextRequest) {
+  const dbError = getDatabaseConfigError();
+  if (dbError) {
+    return NextResponse.json({ error: dbError }, { status: 503 });
+  }
+
   let body: { username?: string; password?: string };
   try {
     body = await request.json();
@@ -36,6 +42,11 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "로그인에 실패했습니다.";
-    return NextResponse.json({ error: message }, { status: 401 });
+    const isConfigError =
+      message.includes("DATABASE_URL") || message.includes("Environment variable not found");
+    return NextResponse.json(
+      { error: message },
+      { status: isConfigError ? 503 : 401 },
+    );
   }
 }
